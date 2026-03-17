@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photography Portfolio V3.1</title>
+  <meta name="description" content="Minimal personal photography portfolio powered by Cloudflare Pages Functions and Unsplash API." />
+  <meta name="theme-color" content="#0b0f14" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-inner">
+      <img id="avatar" class="avatar" alt="avatar" />
+      <p class="eyebrow">Photography Portfolio</p>
+      <h1 id="name">Photographer</h1>
+      <p id="bio" class="bio">Unsplash Portfolio</p>
+      <a id="profileLink" class="profile-link" href="#" target="_blank" rel="noopener noreferrer">View on Unsplash</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="section-head">
+      <div>
+        <h2>Selected Works</h2>
+        <p id="statusText">Loading...</p>
+      </div>
+    </section>
+
+    <section>
+      <div id="gallery" class="gallery"></div>
+      <div id="sentinel" class="sentinel" aria-hidden="true"></div>
+    </section>
+  </main>
+
+  <div id="lightbox" class="lightbox hidden" aria-modal="true" role="dialog">
+    <button id="closeBtn" class="icon-btn close-btn" aria-label="Close preview">×</button>
+
+    <div class="lightbox-shell">
+      <button id="prevBtn" class="nav-btn nav-left" aria-label="Previous photo">‹</button>
+
+      <div class="lightbox-main">
+        <div class="preview-panel">
+          <img id="lightboxImg" alt="preview" />
+        </div>
+
+        <aside class="detail-panel">
+          <div class="detail-header">
+            <p class="detail-label">Photo</p>
+            <h3 id="detailTitle">Untitled</h3>
+            <a id="downloadBtn" class="action-link" href="#" target="_blank" rel="noopener noreferrer">Open on Unsplash</a>
+          </div>
+
+          <div id="photoMeta" class="meta-lines"></div>
+        </aside>
+      </div>
+
+      <button id="nextBtn" class="nav-btn nav-right" aria-label="Next photo">›</button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>© <span id="footerName">Photographer</span></p>
+      <a id="footerLink" href="#" target="_blank" rel="noopener noreferrer">Unsplash</a>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
