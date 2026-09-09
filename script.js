@@ -1,4 +1,5 @@
 const username = "devonchan";
+const DEFAULT_AVATAR = "avatar-default.webp";
 
 let page = 1;
 let photos = [];
@@ -6,9 +7,11 @@ let currentIndex = 0;
 let isLoading = false;
 let hasMore = true;
 let detailCache = new Map();
+let lastFocusedElement = null;
 
 const gallery = document.getElementById("gallery");
 const statusText = document.getElementById("statusText");
+const retryBtn = document.getElementById("retryBtn");
 const lightbox = document.getElementById("lightbox");
 const lightboxImg = document.getElementById("lightboxImg");
 const detailTitle = document.getElementById("detailTitle");
@@ -21,6 +24,7 @@ const sentinel = document.getElementById("sentinel");
 const profileLink = document.getElementById("profileLink");
 const footerLink = document.getElementById("footerLink");
 const footerName = document.getElementById("footerName");
+const avatarImg = document.getElementById("avatar");
 
 function setStatus(text){
   statusText.textContent = text;
@@ -53,12 +57,18 @@ async function apiFetch(url){
   return res.json();
 }
 
+avatarImg.addEventListener("error", () => {
+  if(avatarImg.src.indexOf(DEFAULT_AVATAR) === -1){
+    avatarImg.src = DEFAULT_AVATAR;
+  }
+});
+
 async function loadProfile(){
   try{
     const data = await apiFetch(`/api/profile?username=${encodeURIComponent(username)}`);
     const href = data.links?.html || `https://unsplash.com/@${username}`;
 
-    document.getElementById("avatar").src = data.profile_image?.large || data.profile_image?.medium || "";
+    avatarImg.src = data.profile_image?.large || data.profile_image?.medium || DEFAULT_AVATAR;
     document.getElementById("name").innerText = data.name || username;
     document.getElementById("bio").innerText = data.bio || "Unsplash Photographer";
     profileLink.href = href;
@@ -67,8 +77,9 @@ async function loadProfile(){
   }catch(err){
     console.error(err);
     const href = `https://unsplash.com/@${username}`;
+    avatarImg.src = DEFAULT_AVATAR;
     document.getElementById("name").innerText = username;
-    document.getElementById("bio").innerText = "Unable to load profile";
+    document.getElementById("bio").innerText = "Portfolio is warming up — check back shortly.";
     profileLink.href = href;
     footerLink.href = href;
     footerName.textContent = username;
@@ -78,12 +89,19 @@ async function loadProfile(){
 function createCard(photo, index){
   const card = document.createElement("article");
   card.className = "photo-card";
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", photo.alt_description || photo.description || `Photo ${index + 1}`);
 
   const img = document.createElement("img");
   img.src = photo.urls?.small || photo.urls?.regular;
-  img.alt = photo.alt_description || photo.description || `Photo ${index + 1}`;
+  img.alt = "";
   img.loading = "lazy";
   img.decoding = "async";
+  if(photo.width && photo.height){
+    img.style.aspectRatio = `${photo.width} / ${photo.height}`;
+  }
+  img.addEventListener("load", () => img.classList.add("loaded"), { once: true });
 
   const overlay = document.createElement("div");
   overlay.className = "photo-overlay";
@@ -101,23 +119,57 @@ function createCard(photo, index){
 
   card.appendChild(img);
   card.appendChild(overlay);
-  card.addEventListener("click", () => openLightbox(index));
+  card.addEventListener("click", () => openLightbox(index, card));
+  card.addEventListener("keydown", (e) => {
+    if(e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      openLightbox(index, card);
+    }
+  });
 
   return card;
+}
+
+function createSkeletonCards(count){
+  const ratios = ["3/4", "1/1", "4/5", "3/2", "4/3"];
+  const frag = document.createDocumentFragment();
+  for(let i = 0; i < count; i++){
+    const el = document.createElement("div");
+    el.className = "skeleton-card";
+    el.style.setProperty("--ar", ratios[i % ratios.length]);
+    frag.appendChild(el);
+  }
+  return frag;
+}
+
+function clearSkeletons(){
+  gallery.querySelectorAll(".skeleton-card").forEach((el) => el.remove());
+}
+
+function showRetry(show){
+  retryBtn.classList.toggle("hidden", !show);
 }
 
 async function loadPhotos(){
   if(isLoading || !hasMore) return;
 
   isLoading = true;
+  showRetry(false);
   setStatus(`Loading page ${page}...`);
+
+  const isFirstLoad = photos.length === 0;
+  let skeletons = null;
+  if(isFirstLoad){
+    skeletons = createSkeletonCards(8);
+    gallery.appendChild(skeletons);
+  }
 
   try{
     const data = await apiFetch(`/api/photos?username=${encodeURIComponent(username)}&page=${page}&per_page=24`);
 
     if(!Array.isArray(data) || data.length === 0){
       hasMore = false;
-      setStatus("No more photos");
+      setStatus(photos.length ? `${photos.length} photos loaded` : "No photos to show yet");
       return;
     }
 
@@ -133,11 +185,20 @@ async function loadPhotos(){
     setStatus(`${photos.length} photos loaded`);
   }catch(err){
     console.error(err);
-    setStatus("Load failed. Check username or Cloudflare secret.");
+    setStatus("Couldn't load photos right now.");
+    // Stop auto-retrying from the IntersectionObserver; the user drives retries from here on.
+    hasMore = false;
+    showRetry(true);
   }finally{
+    clearSkeletons();
     isLoading = false;
   }
 }
+
+retryBtn.addEventListener("click", () => {
+  hasMore = true;
+  loadPhotos();
+});
 
 async function getPhotoDetail(photo){
   if(detailCache.has(photo.id)) return detailCache.get(photo.id);
@@ -147,16 +208,47 @@ async function getPhotoDetail(photo){
   return detail;
 }
 
-async function openLightbox(index){
+let lightboxLoadToken = 0;
+
+function loadLightboxImage(photo){
+  const token = ++lightboxLoadToken;
+  const fullSrc = photo.urls?.regular || photo.urls?.full || photo.urls?.small;
+  const previewSrc = photo.urls?.small || fullSrc;
+  lightboxImg.alt = photo.alt_description || photo.description || "preview";
+
+  if(previewSrc && previewSrc !== fullSrc){
+    lightboxImg.classList.add("is-loading");
+    lightboxImg.src = previewSrc;
+
+    const fullImage = new Image();
+    fullImage.onload = () => {
+      if(token !== lightboxLoadToken) return;
+      lightboxImg.src = fullSrc;
+      lightboxImg.classList.remove("is-loading");
+    };
+    fullImage.src = fullSrc;
+  }else{
+    lightboxImg.classList.remove("is-loading");
+    lightboxImg.src = fullSrc;
+  }
+}
+
+async function openLightbox(index, triggerEl){
   currentIndex = index;
   const photo = photos[index];
   if(!photo) return;
 
+  const isFirstOpen = lightbox.classList.contains("hidden");
+  if(isFirstOpen){
+    lastFocusedElement = triggerEl || document.activeElement;
+  }
   lightbox.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  if(isFirstOpen){
+    closeBtn.focus();
+  }
 
-  lightboxImg.src = photo.urls?.regular || photo.urls?.full || photo.urls?.small;
-  lightboxImg.alt = photo.alt_description || photo.description || "preview";
+  loadLightboxImage(photo);
   detailTitle.textContent = photo.alt_description || photo.description || "Untitled";
   photoMeta.innerHTML = renderMetaLine("Status", "Loading details...");
   downloadBtn.href = photo.links?.html || "#";
@@ -196,6 +288,34 @@ async function openLightbox(index){
 function closeLightbox(){
   lightbox.classList.add("hidden");
   document.body.style.overflow = "auto";
+  if(lastFocusedElement && typeof lastFocusedElement.focus === "function"){
+    lastFocusedElement.focus();
+  }
+  lastFocusedElement = null;
+}
+
+function getFocusableElements(){
+  return Array.from(
+    lightbox.querySelectorAll('button, a[href]')
+  ).filter((el) => el.offsetParent !== null);
+}
+
+function trapFocus(e){
+  if(e.key !== "Tab") return;
+
+  const focusable = getFocusableElements();
+  if(focusable.length === 0) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if(e.shiftKey && document.activeElement === first){
+    e.preventDefault();
+    last.focus();
+  }else if(!e.shiftKey && document.activeElement === last){
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 function updateNavState(){
@@ -237,7 +357,31 @@ document.addEventListener("keydown", (e) => {
   if(e.key === "Escape") closeLightbox();
   if(e.key === "ArrowRight") nextPhoto();
   if(e.key === "ArrowLeft") prevPhoto();
+  trapFocus(e);
 });
+
+const SWIPE_THRESHOLD = 50;
+let touchStartX = 0;
+let touchStartY = 0;
+
+const lightboxMain = document.querySelector(".lightbox-main");
+
+lightboxMain.addEventListener("touchstart", (e) => {
+  const touch = e.changedTouches[0];
+  touchStartX = touch.clientX;
+  touchStartY = touch.clientY;
+}, { passive: true });
+
+lightboxMain.addEventListener("touchend", (e) => {
+  const touch = e.changedTouches[0];
+  const dx = touch.clientX - touchStartX;
+  const dy = touch.clientY - touchStartY;
+
+  if(Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+  if(dx < 0) nextPhoto();
+  else prevPhoto();
+}, { passive: true });
 
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {

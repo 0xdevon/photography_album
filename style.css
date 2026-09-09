@@ -106,6 +106,19 @@ button{font:inherit}
   color:var(--muted);
   font-size:14px;
 }
+.retry-btn{
+  margin-top:10px;
+  min-height:34px;
+  padding:0 16px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--line);
+  color:var(--text);
+  font-size:13px;
+  cursor:pointer;
+  transition:.2s ease;
+}
+.retry-btn:hover{background:rgba(255,255,255,.11)}
 
 .gallery{
   column-count:4;
@@ -126,11 +139,41 @@ button{font:inherit}
   width:100%;
   display:block;
   object-fit:cover;
-  transition:transform .35s ease, filter .25s ease;
+  opacity:0;
+  transition:opacity .45s ease, transform .35s ease, filter .25s ease;
+}
+.photo-card img.loaded{
+  opacity:1;
 }
 .photo-card:hover img{
   transform:scale(1.02);
   filter:brightness(1.03);
+}
+
+.skeleton-card{
+  break-inside:avoid;
+  margin-bottom:14px;
+  border-radius:22px;
+  border:1px solid var(--line);
+  background:#10161e;
+  overflow:hidden;
+}
+.skeleton-card::after{
+  content:"";
+  display:block;
+  width:100%;
+  aspect-ratio:var(--ar, 3/4);
+  background:linear-gradient(100deg, #10161e 30%, #171f29 50%, #10161e 70%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer{
+  0%{background-position:120% 0}
+  100%{background-position:-20% 0}
+}
+@media (prefers-reduced-motion: reduce){
+  .skeleton-card::after{animation:none}
+  .photo-card img{transition:none}
 }
 .photo-overlay{
   position:absolute;
@@ -182,6 +225,12 @@ button{font:inherit}
   max-height:84vh;
   object-fit:contain;
   display:block;
+  filter:blur(0);
+  transition:filter .3s ease;
+}
+#lightboxImg.is-loading{
+  filter:blur(14px);
+  transform:scale(1.02);
 }
 .detail-panel{
   border-radius:24px;
@@ -247,8 +296,8 @@ button{font:inherit}
 }
 .close-btn{
   position:absolute;
-  top:16px;
-  right:18px;
+  top:calc(16px + env(safe-area-inset-top));
+  right:calc(18px + env(safe-area-inset-right));
   width:46px;
   height:46px;
   border-radius:999px;
@@ -302,13 +351,13 @@ button{font:inherit}
   #lightboxImg{max-height:58vh}
   .nav-btn{
     position:fixed;
-    bottom:16px;
+    bottom:calc(16px + env(safe-area-inset-bottom));
     z-index:2;
     width:50px;
     height:50px;
   }
-  .nav-left{left:12px}
-  .nav-right{right:12px}
+  .nav-left{left:calc(12px + env(safe-area-inset-left))}
+  .nav-right{right:calc(12px + env(safe-area-inset-right))}
 }
 @media (max-width: 640px){
   .hero{
