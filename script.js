@@ -393,6 +393,7 @@ function resetSheet(){
 
 function onSheetPointerDown(e){
   if(!isSheetMode()) return;
+  if(e.target.closest("a, button")) return;
   sheetDragging = true;
   sheetPointerId = e.pointerId;
   sheetDragStartY = e.clientY;

@@ -384,12 +384,7 @@ button{font:inherit}
     max-height:100dvh;
   }
   .close-btn{z-index:6}
-  .nav-btn{
-    top:20%;
-    width:44px;
-    height:44px;
-    font-size:26px;
-  }
+  .nav-btn{display:none}
   .detail-panel{
     position:fixed;
     left:0;
