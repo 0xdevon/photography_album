@@ -396,7 +396,7 @@ button{font:inherit}
     display:flex;
     flex-direction:column;
     padding:0;
-    border-radius:20px 20px 0 0;
+    border-radius:36px 36px 0 0;
     transform:translateY(0);
     transition:transform .32s cubic-bezier(.32,.72,0,1);
     box-shadow:0 -12px 30px rgba(0,0,0,.35);
@@ -437,9 +437,11 @@ button{font:inherit}
     padding-top:22px;
   }
   .photo-card,
-  .preview-panel,
-  .detail-panel{
+  .preview-panel{
     border-radius:20px;
+  }
+  .detail-panel{
+    border-radius:36px 36px 0 0;
   }
   .footer-inner{
     flex-direction:column;
