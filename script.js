@@ -66,6 +66,8 @@ const closeBtn = document.getElementById("closeBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const downloadBtn = document.getElementById("downloadBtn");
+const detailPanel = document.getElementById("detailPanel");
+const sheetDragZone = document.getElementById("sheetDragZone");
 const sentinel = document.getElementById("sentinel");
 const profileLink = document.getElementById("profileLink");
 const footerLink = document.getElementById("footerLink");
@@ -289,6 +291,7 @@ async function openLightbox(index, triggerEl){
   if(isFirstOpen){
     closeBtn.focus();
   }
+  resetSheet();
 
   loadLightboxImage(photo);
   detailTitle.textContent = photo.alt_description || photo.description || "Untitled";
@@ -324,6 +327,7 @@ async function openLightbox(index, triggerEl){
     photoMeta.innerHTML = renderMetaLine("Details", "Failed to load metadata");
   }
 
+  if(!sheetExpanded) collapseSheet(false);
   updateNavState();
 }
 
@@ -335,6 +339,119 @@ function closeLightbox(){
   }
   lastFocusedElement = null;
 }
+
+const SHEET_BREAKPOINT = 900;
+let sheetExpanded = false;
+let sheetDragging = false;
+let sheetPointerId = null;
+let sheetDragStartY = 0;
+let sheetDragStartTranslate = 0;
+let sheetCurrentTranslate = 0;
+let sheetCollapsedTranslate = 0;
+let sheetLastMoveY = 0;
+let sheetLastMoveTime = 0;
+let sheetVelocity = 0;
+
+function isSheetMode(){
+  return window.matchMedia(`(max-width: ${SHEET_BREAKPOINT}px)`).matches;
+}
+
+function setSheetTransform(px, animate){
+  detailPanel.style.transition = animate ? "" : "none";
+  detailPanel.style.transform = `translateY(${px}px)`;
+}
+
+function measureCollapsedTranslate(){
+  const fullHeight = detailPanel.offsetHeight;
+  const headerHeight = sheetDragZone.offsetHeight;
+  return Math.max(fullHeight - headerHeight, 0);
+}
+
+function collapseSheet(animate = true){
+  if(!isSheetMode()) return;
+  sheetCollapsedTranslate = measureCollapsedTranslate();
+  sheetCurrentTranslate = sheetCollapsedTranslate;
+  sheetExpanded = false;
+  setSheetTransform(sheetCollapsedTranslate, animate);
+}
+
+function expandSheet(animate = true){
+  if(!isSheetMode()) return;
+  sheetCurrentTranslate = 0;
+  sheetExpanded = true;
+  setSheetTransform(0, animate);
+}
+
+function resetSheet(){
+  if(!isSheetMode()){
+    detailPanel.style.transition = "";
+    detailPanel.style.transform = "";
+    return;
+  }
+  collapseSheet(false);
+}
+
+function onSheetPointerDown(e){
+  if(!isSheetMode()) return;
+  sheetDragging = true;
+  sheetPointerId = e.pointerId;
+  sheetDragStartY = e.clientY;
+  sheetDragStartTranslate = sheetCurrentTranslate;
+  sheetLastMoveY = e.clientY;
+  sheetLastMoveTime = performance.now();
+  sheetVelocity = 0;
+  detailPanel.classList.add("dragging");
+  sheetDragZone.setPointerCapture(e.pointerId);
+}
+
+function onSheetPointerMove(e){
+  if(!sheetDragging || e.pointerId !== sheetPointerId) return;
+  const now = performance.now();
+  const dt = now - sheetLastMoveTime;
+  if(dt > 0){
+    sheetVelocity = (e.clientY - sheetLastMoveY) / dt;
+  }
+  sheetLastMoveY = e.clientY;
+  sheetLastMoveTime = now;
+
+  let next = sheetDragStartTranslate + (e.clientY - sheetDragStartY);
+  if(next < 0){
+    next *= 0.3;
+  }else if(next > sheetCollapsedTranslate){
+    next = sheetCollapsedTranslate + (next - sheetCollapsedTranslate) * 0.3;
+  }
+  sheetCurrentTranslate = next;
+  setSheetTransform(next, false);
+}
+
+function onSheetPointerUp(e){
+  if(!sheetDragging || e.pointerId !== sheetPointerId) return;
+  sheetDragging = false;
+  detailPanel.classList.remove("dragging");
+
+  const totalDelta = e.clientY - sheetDragStartY;
+  const isTap = Math.abs(totalDelta) < 6;
+  const FLICK_VELOCITY = 0.5;
+
+  const shouldExpand = isTap
+    ? !sheetExpanded
+    : sheetVelocity < -FLICK_VELOCITY ||
+      (sheetVelocity <= FLICK_VELOCITY && sheetCurrentTranslate < sheetCollapsedTranslate / 2);
+
+  if(shouldExpand) expandSheet();
+  else collapseSheet();
+}
+
+sheetDragZone.addEventListener("pointerdown", onSheetPointerDown);
+sheetDragZone.addEventListener("pointermove", onSheetPointerMove);
+sheetDragZone.addEventListener("pointerup", onSheetPointerUp);
+sheetDragZone.addEventListener("pointercancel", onSheetPointerUp);
+
+let sheetResizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(sheetResizeTimer);
+  sheetResizeTimer = setTimeout(resetSheet, 150);
+});
 
 function getFocusableElements(){
   return Array.from(

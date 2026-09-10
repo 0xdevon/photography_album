@@ -46,11 +46,14 @@
           <button id="nextBtn" class="nav-btn nav-right" aria-label="Next photo">›</button>
         </div>
 
-        <aside class="detail-panel">
-          <div class="detail-header">
-            <p class="detail-label">Photo</p>
-            <h3 id="detailTitle">Untitled</h3>
-            <a id="downloadBtn" class="action-link" href="#" target="_blank" rel="noopener noreferrer">Open on Unsplash</a>
+        <aside class="detail-panel" id="detailPanel">
+          <div class="sheet-drag-zone" id="sheetDragZone">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="detail-header">
+              <p class="detail-label">Photo</p>
+              <h3 id="detailTitle">Untitled</h3>
+              <a id="downloadBtn" class="action-link" href="#" target="_blank" rel="noopener noreferrer">Open on Unsplash</a>
+            </div>
           </div>
 
           <div id="photoMeta" class="meta-lines"></div>
