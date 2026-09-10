@@ -121,13 +121,19 @@ button{font:inherit}
 .retry-btn:hover{background:rgba(255,255,255,.11)}
 
 .gallery{
-  column-count:4;
-  column-gap:14px;
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+}
+.gallery-column{
+  flex:1 1 0;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
 }
 .photo-card{
   position:relative;
-  break-inside:avoid;
-  margin-bottom:14px;
   overflow:hidden;
   border-radius:22px;
   background:#10161e;
@@ -151,8 +157,6 @@ button{font:inherit}
 }
 
 .skeleton-card{
-  break-inside:avoid;
-  margin-bottom:14px;
   border-radius:22px;
   border:1px solid var(--line);
   background:#10161e;
@@ -337,11 +341,7 @@ button{font:inherit}
 }
 .footer-inner p{margin:0}
 
-@media (max-width: 1180px){
-  .gallery{column-count:3}
-}
 @media (max-width: 900px){
-  .gallery{column-count:2}
   .lightbox{padding:10px}
   .lightbox-shell{grid-template-columns:1fr}
   .lightbox-main{
@@ -369,7 +369,6 @@ button{font:inherit}
     width:min(100% - 20px, 1400px);
     padding-top:22px;
   }
-  .gallery{column-count:1}
   .photo-card,
   .preview-panel,
   .detail-panel{

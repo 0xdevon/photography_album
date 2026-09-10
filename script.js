@@ -10,6 +10,52 @@ let detailCache = new Map();
 let lastFocusedElement = null;
 
 const gallery = document.getElementById("gallery");
+let columnCount = getColumnCount();
+let columnEls = [];
+let placeIndex = 0;
+
+function getColumnCount(){
+  const w = window.innerWidth;
+  if(w <= 640) return 1;
+  if(w <= 900) return 2;
+  if(w <= 1180) return 3;
+  return 4;
+}
+
+function buildColumns(){
+  gallery.innerHTML = "";
+  columnEls = [];
+  for(let i = 0; i < columnCount; i++){
+    const col = document.createElement("div");
+    col.className = "gallery-column";
+    gallery.appendChild(col);
+    columnEls.push(col);
+  }
+  placeIndex = 0;
+}
+
+function placeInColumn(el){
+  columnEls[placeIndex % columnEls.length].appendChild(el);
+  placeIndex += 1;
+}
+
+function redistributeColumns(){
+  const newCount = getColumnCount();
+  if(newCount === columnCount) return;
+  columnCount = newCount;
+  const items = Array.from(gallery.querySelectorAll(".photo-card, .skeleton-card"));
+  buildColumns();
+  items.forEach(placeInColumn);
+}
+
+buildColumns();
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(redistributeColumns, 150);
+});
+
 const statusText = document.getElementById("statusText");
 const retryBtn = document.getElementById("retryBtn");
 const lightbox = document.getElementById("lightbox");
@@ -132,14 +178,12 @@ function createCard(photo, index){
 
 function createSkeletonCards(count){
   const ratios = ["3/4", "1/1", "4/5", "3/2", "4/3"];
-  const frag = document.createDocumentFragment();
   for(let i = 0; i < count; i++){
     const el = document.createElement("div");
     el.className = "skeleton-card";
     el.style.setProperty("--ar", ratios[i % ratios.length]);
-    frag.appendChild(el);
+    placeInColumn(el);
   }
-  return frag;
 }
 
 function clearSkeletons(){
@@ -158,10 +202,8 @@ async function loadPhotos(){
   setStatus(`Loading page ${page}...`);
 
   const isFirstLoad = photos.length === 0;
-  let skeletons = null;
   if(isFirstLoad){
-    skeletons = createSkeletonCards(8);
-    gallery.appendChild(skeletons);
+    createSkeletonCards(8);
   }
 
   try{
@@ -178,7 +220,7 @@ async function loadPhotos(){
 
     data.forEach((photo, idx) => {
       const card = createCard(photo, startIndex + idx);
-      gallery.appendChild(card);
+      placeInColumn(card);
     });
 
     page += 1;
