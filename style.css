@@ -202,23 +202,26 @@ button{font:inherit}
   background:rgba(5,8,12,.88);
   backdrop-filter:blur(10px);
   padding:20px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 .lightbox-shell{
   width:min(1480px, 100%);
-  height:100%;
+  min-height:100%;
   margin:0 auto;
-  display:grid;
-  grid-template-columns:70px 1fr 70px;
-  gap:16px;
+  display:flex;
   align-items:center;
+  justify-content:center;
 }
 .lightbox-main{
   display:grid;
   grid-template-columns:minmax(0,1fr) 300px;
   gap:16px;
   align-items:start;
+  width:100%;
 }
 .preview-panel{
+  position:relative;
   overflow:hidden;
   border-radius:26px;
   border:1px solid var(--line);
@@ -227,6 +230,7 @@ button{font:inherit}
 #lightboxImg{
   width:100%;
   max-height:84vh;
+  max-height:84dvh;
   object-fit:contain;
   display:block;
   filter:blur(0);
@@ -309,8 +313,12 @@ button{font:inherit}
   color:#fff;
   font-size:28px;
   border:1px solid var(--line);
+  z-index:5;
 }
 .nav-btn{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
   width:56px;
   height:56px;
   border-radius:999px;
@@ -319,7 +327,10 @@ button{font:inherit}
   font-size:34px;
   border:1px solid var(--line);
   transition:.2s ease;
+  z-index:5;
 }
+.nav-left{left:calc(12px + env(safe-area-inset-left))}
+.nav-right{right:calc(12px + env(safe-area-inset-right))}
 .nav-btn:hover,
 .close-btn:hover{
   background:rgba(255,255,255,.14);
@@ -343,21 +354,20 @@ button{font:inherit}
 
 @media (max-width: 900px){
   .lightbox{padding:10px}
-  .lightbox-shell{grid-template-columns:1fr}
+  .lightbox-shell{align-items:flex-start}
   .lightbox-main{
     grid-template-columns:1fr;
     gap:12px;
   }
-  #lightboxImg{max-height:58vh}
-  .nav-btn{
-    position:fixed;
-    bottom:calc(16px + env(safe-area-inset-bottom));
-    z-index:2;
-    width:50px;
-    height:50px;
+  #lightboxImg{
+    max-height:58vh;
+    max-height:min(60vh, calc(100dvh - 260px));
   }
-  .nav-left{left:calc(12px + env(safe-area-inset-left))}
-  .nav-right{right:calc(12px + env(safe-area-inset-right))}
+  .nav-btn{
+    width:44px;
+    height:44px;
+    font-size:26px;
+  }
 }
 @media (max-width: 640px){
   .hero{
