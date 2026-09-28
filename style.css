@@ -28,6 +28,39 @@ button{font:inherit}
   text-align:center;
   padding:64px 20px 44px;
   border-bottom:1px solid var(--line);
+  overflow:hidden;
+  isolation:isolate;
+}
+.hero::before{
+  content:"";
+  position:absolute;
+  inset:-20%;
+  z-index:-1;
+  background:
+    radial-gradient(ellipse 45% 55% at 20% 20%, rgba(56,120,200,.24), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 80% 25%, rgba(214,140,70,.16), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 55% 90%, rgba(90,70,170,.12), transparent 70%);
+  animation:hero-glow 24s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes hero-glow{
+  from{transform:translate3d(-3%, -2%, 0) scale(1)}
+  to{transform:translate3d(3%, 2%, 0) scale(1.08)}
+}
+.hero-bg{
+  position:absolute;
+  inset:-12px;
+  background:center/cover no-repeat;
+  background-image:var(--hero-img, none);
+  filter:blur(2px) saturate(.9);
+  opacity:0;
+  transform:scale(1.04);
+  transition:opacity .6s ease, transform 1.2s ease;
+  pointer-events:none;
+}
+.hero-bg.is-loaded{
+  opacity:1;
+  transform:scale(1);
 }
 .hero-overlay{
   position:absolute;
@@ -36,6 +69,15 @@ button{font:inherit}
     radial-gradient(circle at 50% 10%, rgba(255,255,255,.08), transparent 28%),
     linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
   pointer-events:none;
+}
+.hero-bg.is-loaded + .hero-overlay{
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(11,15,20,.25), transparent 70%),
+    linear-gradient(180deg, rgba(11,15,20,.5) 0%, rgba(11,15,20,.7) 60%, var(--bg) 100%);
+}
+@media (prefers-reduced-motion: reduce){
+  .hero::before{animation:none}
+  .hero-bg{transition:none}
 }
 .hero-inner{
   position:relative;
@@ -432,6 +474,10 @@ button{font:inherit}
     padding:48px 16px 34px;
   }
   .hero h1{font-size:32px}
+  .hero-bg.is-loaded + .hero-overlay{
+    background:
+      linear-gradient(180deg, rgba(11,15,20,.62) 0%, rgba(11,15,20,.8) 60%, var(--bg) 100%);
+  }
   .page{
     width:min(100% - 20px, 1400px);
     padding-top:22px;

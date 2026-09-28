@@ -111,6 +111,20 @@ avatarImg.addEventListener("error", () => {
   }
 });
 
+function setHeroBackground(photos){
+  const candidates = (photos || []).map(p => p.urls?.regular).filter(Boolean);
+  if(!candidates.length) return;
+
+  const src = candidates[Math.floor(Math.random() * candidates.length)];
+  const img = new Image();
+  img.onload = () => {
+    const heroBg = document.getElementById("heroBg");
+    heroBg.style.setProperty("--hero-img", `url("${src}")`);
+    heroBg.classList.add("is-loaded");
+  };
+  img.src = src;
+}
+
 async function loadProfile(){
   try{
     const data = await apiFetch(`/api/profile?username=${encodeURIComponent(username)}`);
@@ -122,6 +136,7 @@ async function loadProfile(){
     profileLink.href = href;
     footerLink.href = href;
     footerName.textContent = data.name || username;
+    setHeroBackground(data.photos);
   }catch(err){
     console.error(err);
     const href = `https://unsplash.com/@${username}`;
